@@ -1,0 +1,18 @@
+{
+  "C_Cpp.default.includePath": [
+    "${workspaceFolder}/include",
+    "${workspaceFolder}/../axLib/include"
+  ],
+  "C_Cpp.default.browse.path": [
+    "${workspaceFolder}/include",
+    "${workspaceFolder}/../axLib/include",
+    "${workspaceFolder}/compiler",
+    "${workspaceFolder}/asm"
+  ],
+  "C_Cpp.default.defines": [
+    "__aarch64__"
+  ],
+  "C_Cpp.default.compilerPath": "aarch64-linux-gnu-gcc",
+  "C_Cpp.default.intelliSenseMode": "linux-gcc-arm64",
+  "C_Cpp.errorSquiggles": "enabled"
+}
