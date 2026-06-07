@@ -16,7 +16,8 @@ void compiler_main(int8_t *src_ptr)
     uint8_t is_eof = 0; 
 
     // 토큰을 저장하는 배열
-    token token_arr[] = {0,} ;
+    token token_arr[MAX_TOKEN_ARR] = {0,};
+    uint16_t now_token = 0;
     for (int i = 0; i < MAX_SOURCE_LINE; i++)
     {
         int8_t line[64] = {0, }; 
@@ -33,8 +34,25 @@ void compiler_main(int8_t *src_ptr)
 
         lines_num++;
 
-        // lexer의 에러는 리턴함
-        token_arr[i] = lexer(line);
+        check_L receive;
+
+        receive = lexer(&token_arr, &line, i, now_token);
+        now_token = receive.past_token;
+        
+        /*
+            만약 함수 종료 시그널이 들어왔으면
+            파셔을 작동시키기
+        */
+        if (1)
+        {
+            // 배열 초기화
+            token token_arr[MAX_TOKEN_ARR] = {0,};
+            // 추상구문트리 만들기
+
+            // 추상구문트리를 만든다음에
+
+            // 코드젠 함수 부르기
+        }
     }
 
     if (is_eof == 0)
