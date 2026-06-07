@@ -11,7 +11,6 @@
         "path": [
           "${workspaceFolder}/include",
           "${workspaceFolder}/../axLib/include",
-          "${workspaceFolder}/compiler",
           "${workspaceFolder}/asm"
         ],
         "limitSymbolsToIncludedHeaders": true

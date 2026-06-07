@@ -22,7 +22,6 @@ static void compiler_write(const int8_t *text)
     axlib_write(STDOUT_FD, text, str_len(text));
 }
 
-
-int32_t compiler_main(void);
+void compiler_main(int8_t *src_ptr);
 
 #endif
