@@ -40,16 +40,24 @@ enum TOKEN_TYPE {
     // 문자들
     STRING_TOKEN,
 
-    // 연산자들
-    PLUS_TOKNE,
+    // 수 연산자들
+    PLUS_TOKEN,
     MINU_TOKEN,
     MULTI_TOKEN,
-    DIV_TOKEN
+    DIV_TOKEN,
+
+    // 논리 연산자들
+    NOT_TOKEN,
+    AND_TOKEN,
+    OR_TOKEN,
+    XOR_TOKEN
+
 };
 
 // 토큰 생성 에러
 enum ERROR_CODE {
-    FUNC_LINE_ERROR = 1,    // 함수 줄 초과 에러
+    CAN_GO = 1,
+    FUNC_LINE_ERROR,    // 함수 줄 초과 에러
     MAX_TOKEN_ERROR,        // 최대 토큰 에러
     NOT_SYMBOL_ERROR,       // 전방 선언 누락
     PREFIX_ERROR,           // 접두사 생략

@@ -54,16 +54,24 @@ check_L lexer(token *token_arr, int8_t arr[64], uint8_t see_line, uint16_t see_t
 {
     // 리턴할 (어디를 읽을지, 에러코드)튜플
     check_L result;
-    // 토큰 배열에 넣을 위치
-    
+
+    // 된다고 한 다음 에러로 바꾸기
+    result.error_code = CAN_GO;
+
     // 입력 줄이 들어오면 토큰으로 분리하는 로직
     uint8_t see = 0;
     while (see <= 63){
         // 토큰 배열에 넣을
         token now_token;
 
+        // 넘김의 인식
+        if (arr[see] == ' ' || arr[see] == '\t' || arr[see] == '\n')
+        {
+            see++;
+            continue;
+        }
         // 명칭의 인식
-        if (arr[see] == 0x5f || is_letter(arr[see]))
+        else if (arr[see] == 0x5f || is_letter(arr[see]))
         {            
             uint8_t cnt = 0;
             now_token.col = see;
@@ -262,22 +270,25 @@ check_L lexer(token *token_arr, int8_t arr[64], uint8_t see_line, uint16_t see_t
             see++;
             if (arr[see] == '/')
             {
+                see++;
                 // 주석의 처리
-                while (arr[see] == 0x0A)
+                while (see <= 63 && arr[see] != 0x0A)
                 {
                     see++;
                 }
-                break;
             }
             else
             {
-                // 나눗셈으로 가기
-                
-                break;
+                // 나눗셈으로 토큰
+                now_token.col = see;
+                now_token.type = DIV_TOKEN;
+                now_token.offset = see_line;
+                token_arr[see_token] = now_token;
+                see_token++;
             }
         }
         // 문자의 인식
-        else if (arr[see] == 34)
+        else if (arr[see] == '"')
         {
             uint8_t cnt = 0;
             now_token.col = see;
@@ -285,49 +296,139 @@ check_L lexer(token *token_arr, int8_t arr[64], uint8_t see_line, uint16_t see_t
             // 다시 34가 나올때가지 while
             while (arr[see] <  63 && cnt < 31)
             {
-                if (1)
+                if (arr[see] == '"')
                 {
-                    
+                    see++;
+                    break;
+                }
+                else
+                {
+                    now_token.data.name[cnt] = arr[see];
+                    cnt++;
+                    see++;
                 }
             }
+            now_token.data.name[cnt] = '\0';
             now_token.offset = see_line;
             token_arr[see_token] = now_token;
             see_token++;
         }
-        // 연산자의 인식 수 연산(+,-,*), 논리연산(!, &, |, ^, ~)
-        else if (arr[see] ==0x2B)
+        // 연산자의 인식(+,-,*)
+        else if (arr[see] == '+')
         {
             // 더하기 로직
+            now_token.col = see;
+            now_token.type = PLUS_TOKEN;
+            now_token.offset = see_line;
+            token_arr[see_token] = now_token;
+            see_token++;
+            see++;
         }
-        else if (arr[see] == 0x2D)
+        else if (arr[see] == '-')
         {
             // 빼기 로직
+            now_token.col = see;
+            now_token.type = MINU_TOKEN;
+            now_token.offset = see_line;
+            token_arr[see_token] = now_token;
+            see_token++;
+            see++;
         }
-        else if (arr[see] == 0x2A)
+        else if (arr[see] == '*')
         {
             // 곱하기 로직
+            now_token.col = see;
+            now_token.type = MULTI_TOKEN;
+            now_token.offset = see_line;
+            token_arr[see_token] = now_token;
+            see_token++;
+            see++;
+        }
+        else if (arr[see] == '!')
+        {
+            // 부정
+            now_token.col = see;
+            now_token.type = NOT_TOKEN;
+            now_token.offset = see_line;
+            token_arr[see_token] = now_token;
+            see_token++;
+            see++;
+        }
+        else if (arr[see] == '&')
+        {
+            // 그리고
+            now_token.col = see;
+            now_token.type = AND_TOKEN;
+            now_token.offset = see_line;
+            token_arr[see_token] = now_token;
+            see_token++;
+            see++;
+        }
+        else if (arr[see] == '|')
+        {
+            // 또는
+            now_token.col = see;
+            now_token.type = OR_TOKEN;
+            now_token.offset = see_line;
+            token_arr[see_token] = now_token;
+            see_token++;
+            see++;
+        }  
+        else if (arr[see] == '^')
+        {
+            // 베타적 논리합
+            now_token.col = see;
+            now_token.type = XOR_TOKEN;
+            now_token.offset = see_line;
+            token_arr[see_token] = now_token;
+            see_token++;
+            see++;
         }
         // 구분자 및 괄호의 인식
         else if (arr[see] == '(')
         {
             // 열린 괄호
+            now_token.col = see;
+            now_token.type = SO_BRACKET_TOKEN;
+            now_token.offset = see_line;
+            token_arr[see_token] = now_token;
+            see_token++;
+            see++;
         }
         else if (arr[see] == ')')
         {
             // 닫힌 괄호
+            now_token.col = see;
+            now_token.type = SC_BRACKET_TOKEN;
+            now_token.offset = see_line;
+            token_arr[see_token] = now_token;
+            see_token++;
+            see++;
         }
         else if (arr[see] == '{')
         {
             // 열린 중괄호
+            now_token.col = see;
+            now_token.type = MO_BRACKET_TOKEN;
+            now_token.offset = see_line;
+            token_arr[see_token] = now_token;
+            see_token++;
+            see++;
         }
         else if (arr[see] == '}')
         {
             // 닫힌 중괄호
+            now_token.col = see;
+            now_token.type = MC_BRACKET_TOKEN;
+            now_token.offset = see_line;
+            token_arr[see_token] = now_token;
+            see_token++;
+            see++;
         }
 
         see++;
     }
 
-    result.past_token =     see_token;
+    result.past_token = see_token;
     return result;
 }
