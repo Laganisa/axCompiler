@@ -4,6 +4,7 @@
 #include "kernel.h"
 #include "defs.h"
 
+// 15B
 typedef struct token
 {
     uint16_t type; // 토큰 타입
@@ -18,6 +19,8 @@ typedef struct token
     } data;
     
 } token;
+
+#pragma region keywords
 
 typedef struct keyword_t
 {
@@ -48,6 +51,8 @@ static keyword_t keywords[] =
     {"{", MO_BRACKET_TOKEN},
     {"}", MC_BRACKET_TOKEN}
 };
+
+#pragma endregion
 
 // 렉서 체크 튜플
 typedef struct check_L

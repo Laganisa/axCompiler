@@ -3,7 +3,22 @@
 
 #include "kernel.h"
 
+// 나중에 넣기
+// #include "string.h"
+
 #define STDOUT_FD 1
+
+static size_t str_len(const int8_t *s)
+{
+    size_t len = 0;
+
+    while (s[len] != '\0')
+    {
+        len++;
+    }
+
+    return len;
+}
 
 static void compiler_write(const int8_t *text)
 {

@@ -60,7 +60,7 @@ check_L lexer(token *token_arr, int8_t arr[64], uint8_t see_line, uint16_t see_t
 
     // 입력 줄이 들어오면 토큰으로 분리하는 로직
     uint8_t see = 0;
-    while (see <= 63){
+    while (see <= 63 && see_token <  MAX_TOKEN_ARR){
         // 토큰 배열에 넣을
         token now_token;
 

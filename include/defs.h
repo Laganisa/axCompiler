@@ -4,6 +4,8 @@
 // 컴파일러 
 #define MAX_SOURCE_LINE 0x3FFF
 #define MAX_TOKEN_ARR 7877 // 최대 토큰 수
+#define MAX_PARSER_BUF 128
+
 
 // 토큰 타입
 enum TOKEN_TYPE {
