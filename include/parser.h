@@ -5,22 +5,22 @@
 #include "defs.h"
 #include "lexer.h"
 
-typedef struct parser_node_buf
-{
-    // 파서 버퍼
-    uint16_t sp; // 스택 포인터
-    uint16_t current_pos;
-
-    token buf[6*MAX_PARSER_BUF]; // 15.3 KB
-    parser_Resu Resu_arr[MAX_PARSER_BUF]; // 파서 재귀 스택 500개 
-};
-
 typedef struct parser_Resu
 {
     uint8_t state;
     uint16_t token_idx;
     
 } parser_Resu ;
+
+typedef struct parser_node_buf
+{
+    // 파서 버퍼
+    uint16_t sp; // 스택 포인터
+    uint16_t current_pos;
+
+    struct token buf[6*MAX_PARSER_BUF]; // 15.3 KB
+    struct parser_Resu Resu_arr[MAX_PARSER_BUF]; // 파서 재귀 스택 500개 
+};
 
 typedef struct check_P
 {

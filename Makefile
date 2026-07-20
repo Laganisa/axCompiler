@@ -64,6 +64,9 @@ $(TARGET_IMAGE): $(TARGET_ELF)
 $(TARGET_BIN): $(TARGET_IMAGE)
 	@echo "PACK  $@"
 	@python3 -c "from pathlib import Path; import struct; image = Path(r'$(TARGET_IMAGE)').read_bytes(); hdr = struct.pack('<QQQQ', int('$(FM_EXEC_MAGIC)', 0), int('$(FM_EXEC_MODE)', 0), 0, len(image)); Path(r'$(TARGET_BIN)').write_bytes(hdr + image)"
-
+	@echo "---------------------------------------"
+	@echo "axCompiler Build Success"
+	@echo "---------------------------------------"
+	
 clean:
 	$(RM_RF) $(BUILD_DIR) $(TARGET_BIN)

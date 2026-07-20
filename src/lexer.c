@@ -429,6 +429,10 @@ check_L lexer(token *token_arr, int8_t arr[64], uint8_t see_line, uint16_t see_t
         see++;
     }
 
+    token end_token;
+    end_token.type = END_LEXER;
+
+    token_arr[see_token] = end_token;
     result.past_token = see_token;
     return result;
 }
