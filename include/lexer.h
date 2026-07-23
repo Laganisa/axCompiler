@@ -53,6 +53,19 @@ static keyword_t keywords[] =
 
 #pragma endregion
 
+// 토큰 생성 에러
+enum ERROR_CODE
+{
+    CAN_GO = 1,
+    FUNC_LINE_ERROR,   // 함수 줄 초과 에러
+    MAX_TOKEN_ERROR,   // 최대 토큰 에러
+    NOT_SYMBOL_ERROR,  // 전방 선언 누락
+    PREFIX_ERROR,      // 접두사 생략
+    NUMBER_MAKE_ERROR, // 올바르지 않은 숫자 정의(구성중 탈락)
+    NUMBER_VOID_ERROR, // 접두사 다음 문자가 안 옴
+    NUMBER_OVER_ERROR, // 너무 많은 숫자
+};
+
 // 렉서 체크 튜플
 typedef struct check_L
 {

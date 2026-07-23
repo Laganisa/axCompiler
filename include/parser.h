@@ -5,12 +5,12 @@
 #include "defs.h"
 #include "lexer.h"
 
-typedef struct parser_Resu
+typedef struct parser_Resu_stack
 {
     uint8_t state;
     uint16_t token_idx;
 
-} parser_Resu;
+} parser_Resu_stack;
 
 typedef struct parser_node_buf
 {
@@ -18,9 +18,9 @@ typedef struct parser_node_buf
     uint16_t sp; // 스택 포인터
     uint16_t current_pos;
 
-    struct token buf[6 * MAX_PARSER_BUF];        // 15.3 KB
-    struct parser_Resu Resu_arr[MAX_PARSER_BUF]; // 파서 재귀 스택 500개
-};
+    struct token buf[6 * MAX_PARSER_BUF];                // 15.3 KB
+    struct parser_Resu_stack Resu_stack[MAX_PARSER_BUF]; // 파서 재귀 스택 500개
+} parser_node_buf;
 
 typedef struct check_P
 {
@@ -55,7 +55,7 @@ typedef struct ast_node
 check_P parser(ast_node *node_arr, token *token_arr, uint16_t token_number);
 
 // 파서 함수들
-ast_node parser_stat(ast_node *node_arr, token *token_arr);
+ast_node parser_stmt(ast_node *node_arr, token *token_arr);
 ast_node parser_decl(ast_node *node_arr, token *token_arr);
 ast_node parser_expr(ast_node *node_arr, token *token_arr);
 ast_node parser_block(ast_node *node_arr, token *token_arr);
