@@ -3,6 +3,7 @@
 
 #include "kernel.h"
 #include "defs.h"
+#include "token.h"
 
 // 15B
 typedef struct token

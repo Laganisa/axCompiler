@@ -1,6 +1,7 @@
 #include "lexer.h"
 #include "string.h"
 #include "token.h"
+#include "inline.h"
 
 check_L lexer(token *token_arr, int8_t arr[64], uint8_t see_line, uint16_t see_token)
 {
