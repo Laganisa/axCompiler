@@ -7,7 +7,7 @@
 // 추상구문 노드
 typedef struct ast_node
 {
-    uint8_t type;
+    uint8_t node_type;
 
     // 위치를 가리키는 변수
     uint16_t right;
@@ -62,11 +62,12 @@ enum NODE_TYPE
 enum PARSER_ERROR_CODE
 {
     // 아직 작성하지 않음
-    PARSER_OK = 1,
+    PARSER_OK = 1,  //
+    RESU_ERR,       // 재귀중 에러
     NOT_SO_BRACKET, // 여는 소괄호 없음
-    NOT_SO_BRACKET, // 닫는 소괄호 없음
+    NOT_SC_BRACKET, // 닫는 소괄호 없음
     NOT_MO_BRACKET, // 여는 중괄호 없음
-    NOT_MO_BRACKET, // 닫는 중괄호 없음
+    NOT_MC_BRACKET, // 닫는 중괄호 없음
 };
 
 #endif

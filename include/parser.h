@@ -6,29 +6,11 @@
 #include "lexer.h"
 #include "ast_node.h"
 
-/*
-typedef struct parser_Resu_stack
-{
-    uint8_t state;
-    uint16_t token_idx;
-
-} parser_Resu_stack;
-
-typedef struct parser_node_buf
-{
-    // 파서 버퍼
-    uint16_t sp; // 스택 포인터
-    uint16_t current_pos;
-
-    struct token buf[6 * MAX_PARSER_BUF];                // 15.3 KB
-    struct parser_Resu_stack Resu_stack[MAX_PARSER_BUF]; // 파서 재귀 스택 500개
-} parser_node_buf;
-*/
-
 // 파서 확인 코드
 typedef struct check_Parser
 {
-    uint8_t error_code;  // 에러코드
+    uint8_t error_code;  // 파서 에러코드
+    uint16_t pos;        // 방금 파싱한 함수의 배열 내 위치
     uint16_t psr_is_end; // 함수 종료코드
 
 } check_Parser;
@@ -36,25 +18,25 @@ typedef struct check_Parser
 check_Parser parser(ast_node *node_arr, token *token_arr, uint16_t token_number);
 
 // 파서 재귀 함수들
-ast_node parser_expr(
+check_Parser psr_expr(
     ast_node *node_arr,
     token *token_arr,
     uint16_t *see_token,
     uint16_t token_number);
 
-ast_node parser_stmt(
+check_Parser psr_stmt(
     ast_node *node_arr,
     token *token_arr,
     uint16_t *see_token,
     uint16_t token_number);
 
-ast_node parser_decl(
+check_Parser psr_decl(
     ast_node *node_arr,
     token *token_arr,
     uint16_t *see_token,
     uint16_t token_number);
 
-ast_node parser_block(
+check_Parser psr_block(
     ast_node *node_arr,
     token *token_arr,
     uint16_t *see_token,
