@@ -104,12 +104,12 @@ check_Lexer lexer(
 
             while (lxr_src_index < 64 &&
                    lexer_identifier_name_len <
-                       sizeof(lxr_curr_token.token_value_data.token_text_value) - 1 &&
+                       sizeof(lxr_curr_token.token_value_data.token_name) - 1 &&
                    (lxr_src_line[lxr_src_index] == '_' ||
                     is_letter(lxr_src_line[lxr_src_index]) ||
                     is_dec_number(lxr_src_line[lxr_src_index])))
             {
-                lxr_curr_token.token_value_data.token_text_value[lexer_identifier_name_len] =
+                lxr_curr_token.token_value_data.token_name[lexer_identifier_name_len] =
                     lxr_src_line[lxr_src_index];
                 lexer_identifier_name_len++;
                 lxr_src_index++;
@@ -124,7 +124,7 @@ check_Lexer lexer(
                 break;
             }
 
-            lxr_curr_token.token_value_data.token_text_value[lexer_identifier_name_len] = '\0';
+            lxr_curr_token.token_value_data.token_name[lexer_identifier_name_len] = '\0';
 
             for (size_t lxr_keyword_index = 0;
                  lxr_keyword_index <
@@ -132,7 +132,7 @@ check_Lexer lexer(
                  lxr_keyword_index++)
             {
                 if (axlib_strcmp(
-                        (const char *)lxr_curr_token.token_value_data.token_text_value,
+                        (const char *)lxr_curr_token.token_value_data.token_name,
                         lexer_keyword_arr[lxr_keyword_index].keyword_name_text) == 0)
                 {
                     lxr_curr_token.token_type =
@@ -166,8 +166,8 @@ check_Lexer lexer(
             uint8_t lexer_digit_cnt = 0;
             uint8_t lexer_num_type = 0;
 
-            lxr_curr_token.token_value_data.token_text_value[0] = '0';
-            lxr_curr_token.token_value_data.token_text_value[1] = lexer_num_prefix;
+            lxr_curr_token.token_value_data.token_name[0] = '0';
+            lxr_curr_token.token_value_data.token_name[1] = lexer_num_prefix;
 
             if (lexer_num_prefix == 'b')
             {
@@ -219,7 +219,7 @@ check_Lexer lexer(
                     break;
                 }
 
-                lxr_curr_token.token_value_data.token_text_value[2 + lexer_digit_cnt] =
+                lxr_curr_token.token_value_data.token_name[2 + lexer_digit_cnt] =
                     lxr_src_char;
                 lexer_digit_cnt++;
                 lxr_src_index++;
@@ -243,7 +243,7 @@ check_Lexer lexer(
                 break;
             }
 
-            lxr_curr_token.token_value_data.token_text_value[2 + lexer_digit_cnt] = '\0';
+            lxr_curr_token.token_value_data.token_name[2 + lexer_digit_cnt] = '\0';
             lxr_curr_token.token_type = lexer_num_type;
 
             if (!lexer_append_token(
@@ -282,12 +282,12 @@ check_Lexer lexer(
                    lxr_src_line[lxr_src_index] != '\r')
             {
                 if (lexer_literal_string_len >=
-                    sizeof(lxr_curr_token.token_value_data.token_text_value) - 1)
+                    sizeof(lxr_curr_token.token_value_data.token_name) - 1)
                 {
                     lxr_op_result.lxr_error_code = STRING_MAKE_ERROR;
                     break;
                 }
-                lxr_curr_token.token_value_data.token_text_value[lexer_literal_string_len] =
+                lxr_curr_token.token_value_data.token_name[lexer_literal_string_len] =
                     lxr_src_line[lxr_src_index];
                 lexer_literal_string_len++;
                 lxr_src_index++;
@@ -305,7 +305,7 @@ check_Lexer lexer(
             }
 
             lxr_src_index++;
-            lxr_curr_token.token_value_data.token_text_value[lexer_literal_string_len] = '\0';
+            lxr_curr_token.token_value_data.token_name[lexer_literal_string_len] = '\0';
             lxr_curr_token.token_type = STRING_TOKEN;
         }
         else

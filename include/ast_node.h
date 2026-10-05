@@ -55,7 +55,7 @@ enum NODE_TYPE
     PARAM_NODE,
     ARG_NODE,
 
-    ERR_NODE = 255 // 에러 노드(에러가 나올때 이 타입임)
+    // ERR_NODE = 255 // 에러 노드(에러가 나올때 이 타입임)
 };
 
 // 노드 생성 에러
@@ -70,6 +70,12 @@ enum PARSER_ERROR_CODE
     NOT_MC_BRACKET, // 닫는 중괄호 없음
 
     NOT_SEMI, // 세미콜론 없음
+
+    NOT_DATA_TYPE, // 자료형이 아님
+    NOT_VAR_NAME,  // 변수 이름이 아님
+
+    NOT_OP, // 연산자가 아님
+    UNEXPECTED_TOKEN, // 예상하지 않은 토큰
 };
 
 #endif

@@ -11,10 +11,10 @@ typedef struct token
     uint8_t token_src_column;
     uint32_t token_src_line;
 
-    union
+    union token_value_data
     {
-        int64_t token_numeric_value;
-        int8_t token_text_value[32];
+        int64_t token_numeric_value; // 숫자
+        int8_t token_name[32];       // 이름
     } token_value_data;
 
 } token;
@@ -70,9 +70,6 @@ enum TOKEN_TYPE
     OR_TOKEN,
     XOR_TOKEN,
 
-    // 세미콜론
-    SEMI_TOKEN,
-
     // 비교 연산자들
     EQUAL_TOKEN,
     NOT_EQUAL_TOKEN,
@@ -89,6 +86,7 @@ enum TOKEN_TYPE
     // 구분자
     COMMA_TOKEN,
     DOT_TOKEN,
+    SEMI_TOKEN,
 
     // 토큰 종료
     END_TOKEN,

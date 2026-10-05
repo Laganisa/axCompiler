@@ -11,6 +11,7 @@ typedef struct check_Parser
 {
     uint8_t error_code;  // 파서 에러코드
     uint16_t pos;        // 방금 파싱한 함수의 배열 내 위치
+    uint16_t node_pos;   // 노드 배열의 어디까지 채워져 있는지
     uint16_t psr_is_end; // 함수 종료코드
 
 } check_Parser;
