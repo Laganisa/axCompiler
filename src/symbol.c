@@ -1,10 +1,12 @@
 #include "symbol.h"
 #include "hash.h"
+#include "memory.h"
 
 // 스코프 타입에 맞는 스코프를 생성
 scope *scope_crete(ScopeType val)
 {
-    scope *new_scp;
+    scope *new_scp = (scope *)axlib_malloc(sizeof(scope));
+    ;
     new_scp->type = val;
     new_scp->par = NULL;
 
@@ -24,13 +26,14 @@ void scope_delate(scope *scp)
 {
     // 부모로 스코프를 옮기기
     scp = scp->par;
+    axlib_free(scp);
 }
 
 /*
     char *가 들어오면 해시를 통한 탐색
     해시를 배열에 넣고 그 인덱스를 반환
 */
-uint8_t symbol_table(scope *scp, char name)
+uint8_t symbol_table(scope *scp, char *name)
 {
     // 해시로 변환
     uint64_t hash_val = axlib_fnv1a_hash_64(name);

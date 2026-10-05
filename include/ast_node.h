@@ -30,6 +30,7 @@ enum NODE_TYPE
 {
     NONE_NODE = 1,
     NUM_NODE,
+    FLOAT_NODE,
     STRING_NODE,
     VAR_NODE,
     TYPE_NODE,
@@ -68,6 +69,8 @@ enum PARSER_ERROR_CODE
     NOT_SC_BRACKET, // 닫는 소괄호 없음
     NOT_MO_BRACKET, // 여는 중괄호 없음
     NOT_MC_BRACKET, // 닫는 중괄호 없음
+    NOT_BO_BRACKET, // 여는 대괄호 없음
+    NOT_BC_BRACKET, // 닫는 대괄호 없음
 
     NOT_SEMI, // 세미콜론 없음
 
@@ -76,6 +79,8 @@ enum PARSER_ERROR_CODE
 
     NOT_OP, // 연산자가 아님
     UNEXPECTED_TOKEN, // 예상하지 않은 토큰
+    NOT_EXPRESSION, // 표현식이 아님
+    PARSER_NODE_LIMIT, // AST 노드 배열 한도 초과
 };
 
 #endif

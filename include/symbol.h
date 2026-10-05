@@ -26,12 +26,13 @@ typedef struct scope
 } scope;
 
 // 스코프를 만드는 함수
-scope scope_crete(ScopeType);
+scope *scope_crete(ScopeType);
+void scope_delate(scope *scp);
 
 /*
     현재 열린 스코프랑 char *가 들어오면 해시를 통한 탐색
     해시를 배열에 넣고 그 인덱스를 반환
 */
-uint8_t symbol_table(scope *scp, char name);
+uint8_t symbol_table(scope *scp, char *name);
 
 #endif
