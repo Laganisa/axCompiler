@@ -62,12 +62,14 @@ enum NODE_TYPE
 enum PARSER_ERROR_CODE
 {
     // 아직 작성하지 않음
-    PARSER_OK = 1,  //
-    RESU_ERR,       // 재귀중 에러
+    PARSER_OK = 1, // ACK
+
     NOT_SO_BRACKET, // 여는 소괄호 없음
     NOT_SC_BRACKET, // 닫는 소괄호 없음
     NOT_MO_BRACKET, // 여는 중괄호 없음
     NOT_MC_BRACKET, // 닫는 중괄호 없음
+
+    NOT_SEMI, // 세미콜론 없음
 };
 
 #endif

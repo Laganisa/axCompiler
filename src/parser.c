@@ -44,6 +44,8 @@ check_Parser psr_stmt(
             return new_psr_state;
         }
 
+        *see_token++;
+
         // 표현식 파싱
         // mid에 들어갈 변수
         now_psr_state = psr_expr(
@@ -59,6 +61,8 @@ check_Parser psr_stmt(
             return new_psr_state;
         }
 
+        new_node.mid = now_psr_state.pos;
+
         // 괄호 확인
         if (token_arr[*see_token].token_type != SO_BRACKET_TOKEN)
         {
@@ -67,8 +71,7 @@ check_Parser psr_stmt(
             return new_psr_state;
         }
 
-        // mid에 넣기
-        new_node.mid = now_psr_state.pos;
+        *see_token++;
 
         // 블록 파싱
         // left에 들어갈거
@@ -123,13 +126,13 @@ check_Parser psr_stmt(
         }
 
         // 마무리
-        new_psr_state.error_code = PARSER_OK;
+
         new_node.node_type = IF_NODE;
     }
 
     // 반복문의 어휘 분석
-    // 조건 반복문
-    else if (current_type == WHILE_TOKEN)
+    // 조건 반복문 및 한정 반복문
+    else if (current_type == WHILE_TOKEN || current_type == FOR_TOKEN)
     {
         *see_token++;
 
@@ -141,6 +144,58 @@ check_Parser psr_stmt(
             return new_psr_state;
         }
 
+        *see_token++;
+
+        // for 문이라면?
+        if (current_type == FOR_TOKEN)
+        {
+            // 파싱
+            // 선언일 경우
+            if (
+                token_arr[*see_token].token_type >= UINT8_TOKEN &&
+                token_arr[*see_token].token_type <= INT64_TOKEN)
+            {
+                now_psr_state = psr_decl(
+                    node_arr,
+                    token_arr,
+                    see_token,
+                    token_number);
+            }
+            // 대입일 경우
+            else
+            {
+                now_psr_state = psr_expr(
+                    node_arr,
+                    token_arr,
+                    see_token,
+                    token_number);
+            }
+
+            if (now_psr_state.error_code != PARSER_OK)
+            {
+                new_psr_state.error_code = now_psr_state.error_code;
+                return new_psr_state;
+            }
+
+            new_node.left = now_psr_state.pos;
+        }
+
+        // 조건식 파싱
+        now_psr_state = psr_expr(
+            node_arr,
+            token_arr,
+            see_token,
+            token_number);
+
+        // 재귀로 받은 노드 확인
+        if (now_psr_state.error_code != PARSER_OK)
+        {
+            new_psr_state.error_code = now_psr_state.error_code;
+            return new_psr_state;
+        }
+
+        new_node.mid = now_psr_state.pos;
+
         // 괄호 확인
         if (token_arr[*see_token].token_type != SC_BRACKET_TOKEN)
         {
@@ -148,30 +203,29 @@ check_Parser psr_stmt(
             new_psr_state.error_code = NOT_SC_BRACKET;
             return new_psr_state;
         }
+
+        *see_token++;
+
+        // 오른쪽 파싱
+
+        now_psr_state = psr_block(
+            node_arr,
+            token_arr,
+            see_token,
+            token_number);
+
+        // 재귀로 받은 노드 확인
+        if (now_psr_state.error_code != PARSER_OK)
+        {
+            new_psr_state.error_code = now_psr_state.error_code;
+            return new_psr_state;
+        }
+
+        // left에 넣기
+        new_node.right = now_psr_state.pos;
 
         // - 내부 블록 파싱
-    }
-    // 한정 반복문
-    else if (current_type == FOR_TOKEN)
-    {
-        *see_token++;
-        // - 조건/초기화/증감식 파싱
-
-        // 괄호 확인
-        if (token_arr[*see_token].token_type != SO_BRACKET_TOKEN)
-        {
-            // 구문 오류
-            new_psr_state.error_code = NOT_SO_BRACKET;
-            return new_psr_state;
-        }
-
-        // 괄호 확인
-        if (token_arr[*see_token].token_type != SC_BRACKET_TOKEN)
-        {
-            // 구문 오류
-            new_psr_state.error_code = NOT_SC_BRACKET;
-            return new_psr_state;
-        }
+        new_node.node_type = IF_NODE;
     }
 
     // 반환문 (return) 처리
@@ -194,22 +248,95 @@ check_Parser psr_stmt(
 
         new_node.left = now_psr_state.pos;
 
-        // - 세미콜론(SEMI_TOKEN) 소비 확인
+        // 새미콜론이 없다면?
+        if (token_arr[*see_token].token_type != SEMI_TOKEN)
+        {
+            // 구문 에러
+            new_psr_state.error_code = NOT_SEMI;
+            return new_psr_state;
+        }
+
+        *see_token++;
+
+        // 마무리
+        new_node.node_type = IF_NODE;
     }
 
     // 자료형으로 시작하는 선언문 처리 (int, uint 등)
     else if (current_type >= UINT8_TOKEN && current_type <= INT64_TOKEN)
     {
-        // - 자료형 토큰 소비
-        // - 변수명(VAL_TOKEN) 소비 확인
-        // - 대입('=')이 있다면 우측 표현식 파싱
-        // - 세미콜론(SEMI_TOKEN) 소비 확인
+        *see_token++;
+
+        now_psr_state = psr_decl(
+            node_arr,
+            token_arr,
+            see_token,
+            token_number);
+
+        // 재귀로 받은 노드 확인
+        if (now_psr_state.error_code != PARSER_OK)
+        {
+            new_psr_state.error_code = now_psr_state.error_code;
+            return new_psr_state;
+        }
+
+        new_node.left = now_psr_state.pos;
+
+        // 대입 연산자가 있다면?
+        // 오른쪽에 넣기
+        if (token_arr[*see_token].token_type == EQUAL_TOKEN)
+        {
+            // 표현식 파싱
+            *see_token++;
+
+            now_psr_state = psr_expr(
+                node_arr,
+                token_arr,
+                see_token,
+                token_number);
+
+            // 재귀로 받은 노드 확인
+            if (now_psr_state.error_code != PARSER_OK)
+            {
+                new_psr_state.error_code = now_psr_state.error_code;
+                return new_psr_state;
+            }
+
+            new_node.right = now_psr_state.pos;
+        }
+
+        // 새미콜론이 없다면?
+        if (token_arr[*see_token].token_type != SEMI_TOKEN)
+        {
+            // 구문 에러
+            new_psr_state.error_code = NOT_SEMI;
+            return new_psr_state;
+        }
+
+        *see_token++;
+
+        // 마무리
+        new_node.node_type = IF_NODE;
     }
 
     // 중괄호 블록 처리
     else if (current_type == MO_BRACKET_TOKEN)
     {
-        // - parser_block 함수 호출해서 중괄호 내부 전체 처리
+        now_psr_state = psr_block(
+            node_arr,
+            token_arr,
+            see_token,
+            token_number);
+
+        // 재귀로 받은 노드 확인
+        if (now_psr_state.error_code != PARSER_OK)
+        {
+            new_psr_state.error_code = now_psr_state.error_code;
+            return new_psr_state;
+        }
+
+        new_node.left = now_psr_state.pos;
+        new_node.node_type = IF_NODE;
     }
 
     // 표현식 처리
@@ -225,6 +352,7 @@ check_Parser psr_stmt(
 
     // 생성된 new_node를 배열에 넣기
 
+    new_psr_state.error_code = PARSER_OK;
     return new_psr_state;
 }
 
@@ -236,6 +364,9 @@ check_Parser psr_decl(ast_node *node_arr, token *token_arr, uint16_t *see_token,
     check_Parser new_psr_state;
 
     ast_node new_node;
+
+    // 재귀함수 호출에 쓰일 리턴 구조체
+    check_Parser now_psr_state;
 
     // 종료 조건
     if (*see_token >= token_number)
@@ -299,6 +430,9 @@ check_Parser psr_expr(ast_node *node_arr, token *token_arr, uint16_t *see_token,
     check_Parser new_psr_state;
     ast_node new_node;
 
+    // 재귀함수 호출에 쓰일 리턴 구조체
+    check_Parser now_psr_state;
+
     // [초안 아이디어: 항 + (연산자 + 항) 반복 구조]
 
     // 1. 첫 번째 항(Term) 파싱 (숫자, 변수, 혹은 괄호로 둘러싼 식 등)
@@ -342,16 +476,15 @@ check_Parser psr_block(ast_node *node_arr, token *token_arr, uint16_t *see_token
         return new_psr_state;
     }
 
-    // 1. 열린 중괄호 '{' (MO_BRACKET_TOKEN) 확인 및 소비
-    if (*see_token < token_number && token_arr[*see_token].token_type == MO_BRACKET_TOKEN)
+    if (token_arr[*see_token].token_type != MO_BRACKET_TOKEN)
     {
+        // 에러
         *see_token++;
-    }
-    else
-    {
-        // 에러: '{'가 없음
+        new_psr_state.error_code = NOT_MO_BRACKET;
         return new_psr_state;
     }
+
+    *see_token++;
 
     // 2. 닫힌 중괄호 '}' (MC_BRACKET_TOKEN)가 나올 때까지 내부 문장 반복 파싱
     while (*see_token < token_number)
