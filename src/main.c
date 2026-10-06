@@ -25,7 +25,7 @@ static uint8_t proc_src_line(
 static int32_t create_test_src(void)
 {
     // 파일을 생성하고
-    file_creat("test", "0777", 4096);
+    file_create("test", "0777", 4096);
 
     int32_t src_writer_fd = file_open("test", 'u', 0);
 

@@ -5,6 +5,7 @@
 #include "defs.h"
 #include "lexer.h"
 #include "ast_node.h"
+#include "symbol.h"
 
 // 파서 확인 코드
 typedef struct check_Parser
@@ -20,6 +21,7 @@ typedef struct check_Parser
 check_Parser parser(ast_node *node_arr, token *token_arr, uint16_t token_number);
 
 extern uint16_t global_node_pos;
+extern scope *current_scope;
 
 #define PSR_NO_NODE 0xFFFFu
 
@@ -77,39 +79,116 @@ static inline check_Parser psr_store_node(
     return psr_result(PARSER_OK, npos);
 }
 
-static inline uint8_t psr_names_equal(
-    const int8_t *name_left,
-    const int8_t *name_right)
+static inline void psr_symbol_name(
+    const token *token_arr,
+    uint16_t token_pos,
+    char *name)
 {
     uint16_t name_index = 0;
-
-    while (name_index < 32 &&
-           name_left[name_index] == name_right[name_index])
+    while (name_index < 31 &&
+           token_arr[token_pos].token_value_data.token_name[name_index] != '\0')
     {
-        if (name_left[name_index] == '\0')
-        {
-            return TRUE;
-        }
+        name[name_index] =
+            (char)token_arr[token_pos].token_value_data.token_name[name_index];
         name_index++;
     }
-    return FALSE;
+    name[name_index] = '\0';
 }
 
-static inline uint16_t psr_symbol_id(
+static inline uint8_t psr_symbol_create(
     const token *token_arr,
-    uint16_t token_pos)
+    uint16_t token_pos,
+    uint16_t *symbol_id)
 {
-    for (uint16_t name_index = 0; name_index < token_pos; name_index++)
+    if (token_arr == 0 || current_scope == 0 || symbol_id == 0)
     {
-        if (token_arr[name_index].token_type == VAL_TOKEN &&
-            psr_names_equal(
-                token_arr[name_index].token_value_data.token_name,
-                token_arr[token_pos].token_value_data.token_name))
+        return SYMBOL_SCOPE_ERROR;
+    }
+
+    char name[32] = {0};
+    psr_symbol_name(token_arr, token_pos, name);
+    uint8_t symbol_pos = symbol_crate(current_scope, name);
+    if (symbol_pos == SYMBOL_CRATE_ERR)
+    {
+        return SYMBOL_CREATE_ERROR;
+    }
+
+    *symbol_id = symbol_pos;
+    return PARSER_OK;
+}
+
+static inline uint8_t psr_symbol_search(
+    const token *token_arr,
+    uint16_t token_pos,
+    uint16_t *symbol_id)
+{
+    if (token_arr == 0 || current_scope == 0 || symbol_id == 0)
+    {
+        return SYMBOL_SCOPE_ERROR;
+    }
+
+    char name[32] = {0};
+    psr_symbol_name(token_arr, token_pos, name);
+    uint8_t symbol_pos = symbol_search(current_scope, name);
+    if (symbol_pos == SYMBOL_SEARCH_ERR)
+    {
+        return SYMBOL_SEARCH_ERROR;
+    }
+
+    uint64_t name_hash = axlib_fnv1a_hash_64(name);
+    // 같은 이름이면 가까운 스코프의 심볼을 우선 사용
+    for (scope *now_scope = current_scope;
+         now_scope != 0;
+         now_scope = now_scope->par)
+    {
+        for (uint8_t name_index = 0;
+             name_index < now_scope->num;
+             name_index++)
         {
-            return name_index;
+            if (now_scope->symbol_buf[name_index] == name_hash)
+            {
+                *symbol_id = name_index;
+                return PARSER_OK;
+            }
         }
     }
-    return token_pos;
+
+    *symbol_id = symbol_pos;
+    return PARSER_OK;
+}
+
+static inline uint8_t psr_scope_open(ScopeType scope_type)
+{
+    scope *new_scope = scope_crete(scope_type);
+    if (new_scope == 0)
+    {
+        return SYMBOL_SCOPE_ERROR;
+    }
+
+    // 생성된 스코프의 심볼 개수 초기화
+    new_scope->num = 0;
+    new_scope->par = current_scope;
+    current_scope = new_scope;
+    return PARSER_OK;
+}
+
+static inline uint8_t psr_scope_close(void)
+{
+    if (current_scope == 0)
+    {
+        return SYMBOL_SCOPE_ERROR;
+    }
+
+    current_scope = scope_delate(current_scope);
+    return PARSER_OK;
+}
+
+static inline void psr_scope_close_all(void)
+{
+    while (current_scope != 0)
+    {
+        psr_scope_close();
+    }
 }
 
 static inline uint8_t psr_number_value(
@@ -304,10 +383,19 @@ static inline check_Parser psr_primary(
     else if (current_type == VAL_TOKEN)
     {
         uint16_t name_pos = *see_token;
+        uint16_t symbol_id = 0;
+        uint8_t symbol_state = psr_symbol_search(
+            token_arr,
+            name_pos,
+            &symbol_id);
+        if (symbol_state != PARSER_OK)
+        {
+            return psr_result(symbol_state, PSR_NO_NODE);
+        }
 
         psr_init_node(&new_node, VAR_NODE);
 
-        new_node.value.sym = psr_symbol_id(token_arr, name_pos);
+        new_node.value.sym = symbol_id;
 
         (*see_token)++;
 
@@ -477,7 +565,7 @@ static inline check_Parser psr_primary(
 
             psr_init_node(&new_node, MEMBER_NODE);
             new_node.left = expression_pos;
-            new_node.value.sym = psr_symbol_id(token_arr, *see_token);
+            new_node.value.sym = *see_token;
             (*see_token)++;
             check_Parser member_state = psr_store_node(node_arr, new_node);
             if (member_state.error_code != PARSER_OK)
@@ -604,10 +692,12 @@ check_Parser psr_decl(
     uint16_t *see_token,
     uint16_t token_number);
 
+// 함수 본문은 매개변수와 같은 스코프를 사용
 check_Parser psr_block(
     ast_node *node_arr,
     token *token_arr,
     uint16_t *see_token,
-    uint16_t token_number);
+    uint16_t token_number,
+    uint8_t function_body);
 
 #endif

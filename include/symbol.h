@@ -25,10 +25,9 @@ typedef struct scope
 
 } scope;
 
-// 노드 생성 에러
+// 심블 생성 에러
 enum SYMBOL_ERROR_CODE
 {
-    // 아직 작성하지 않음
     SYMBOL_OK = 1, // ACK
 
     SYMBOL_MAX_SCP = MAX_SCOPE_SIZE, // 최대 스코프 사이즈

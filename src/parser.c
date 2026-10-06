@@ -7,6 +7,7 @@
 
 // 재귀를 위한 함수
 uint16_t global_node_pos = 0; // 모든 함수에서 사용가능한 어떤 노드 위치에 넣을지
+scope *current_scope = 0;
 
 /*
     표현식의 어휘 분석
@@ -75,9 +76,22 @@ check_Parser psr_decl(
 
     // 변수명 넣기
     uint16_t name_pos = *see_token;
+
+    uint16_t symbol_id = 0;
+    uint8_t symbol_state = psr_symbol_create(
+        token_arr,
+        name_pos,
+        &symbol_id);
+
+    if (symbol_state != PARSER_OK)
+    {
+        return psr_result(symbol_state, PSR_NO_NODE);
+    }
+
     psr_init_node(&new_node, VAR_NODE);
-    new_node.value.sym = psr_symbol_id(token_arr, name_pos);
+    new_node.value.sym = symbol_id;
     check_Parser name_state = psr_store_node(node_arr, new_node);
+
     if (name_state.error_code != PARSER_OK)
     {
         return name_state;
@@ -124,7 +138,8 @@ check_Parser psr_block(
     ast_node *node_arr,
     token *token_arr,
     uint16_t *see_token,
-    uint16_t token_number)
+    uint16_t token_number,
+    uint8_t function_body)
 {
     // 종료 조건
     if (node_arr == 0 || token_arr == 0 || see_token == 0)
@@ -137,6 +152,17 @@ check_Parser psr_block(
         return psr_result(NOT_MO_BRACKET, PSR_NO_NODE);
     }
     (*see_token)++;
+
+    uint8_t scope_state = PARSER_OK;
+    // 함수 본문은 매개변수와 같은 스코프를 사용
+    if (!function_body)
+    {
+        scope_state = psr_scope_open(SCOPE_BLOCK);
+        if (scope_state != PARSER_OK)
+        {
+            return psr_result(scope_state, PSR_NO_NODE);
+        }
+    }
 
     uint16_t head_pos = PSR_NO_NODE;
     uint16_t tail_pos = PSR_NO_NODE;
@@ -194,7 +220,21 @@ check_Parser psr_block(
     ast_node new_node = {0};
     psr_init_node(&new_node, BLOCK_NODE);
     new_node.left = head_pos;
-    return psr_store_node(node_arr, new_node);
+    check_Parser block_state = psr_store_node(node_arr, new_node);
+    if (block_state.error_code != PARSER_OK)
+    {
+        return block_state;
+    }
+
+    if (!function_body)
+    {
+        scope_state = psr_scope_close();
+        if (scope_state != PARSER_OK)
+        {
+            return psr_result(scope_state, PSR_NO_NODE);
+        }
+    }
+    return block_state;
 }
 
 /*
@@ -235,8 +275,18 @@ check_Parser psr_stmt(
 
         // 함수 이름인지 확인
         uint16_t name_pos = *see_token;
+        uint16_t symbol_id = 0;
+        uint8_t symbol_state = psr_symbol_create(
+            token_arr,
+            name_pos,
+            &symbol_id);
+        if (symbol_state != PARSER_OK)
+        {
+            return psr_result(symbol_state, PSR_NO_NODE);
+        }
+
         psr_init_node(&new_node, VAR_NODE);
-        new_node.value.sym = psr_symbol_id(token_arr, name_pos);
+        new_node.value.sym = symbol_id;
         check_Parser name_state = psr_store_node(node_arr, new_node);
         if (name_state.error_code != PARSER_OK)
         {
@@ -250,6 +300,12 @@ check_Parser psr_stmt(
             return psr_result(NOT_SO_BRACKET, PSR_NO_NODE);
         }
         (*see_token)++;
+
+        uint8_t scope_state = psr_scope_open(SCOPE_FUNCTION);
+        if (scope_state != PARSER_OK)
+        {
+            return psr_result(scope_state, PSR_NO_NODE);
+        }
 
         uint16_t param_head = PSR_NO_NODE;
         uint16_t param_tail = PSR_NO_NODE;
@@ -282,8 +338,18 @@ check_Parser psr_stmt(
                 }
 
                 uint16_t param_name_pos = *see_token;
+                uint16_t param_symbol_id = 0;
+                uint8_t param_symbol_state = psr_symbol_create(
+                    token_arr,
+                    param_name_pos,
+                    &param_symbol_id);
+                if (param_symbol_state != PARSER_OK)
+                {
+                    return psr_result(param_symbol_state, PSR_NO_NODE);
+                }
+
                 psr_init_node(&new_node, VAR_NODE);
-                new_node.value.sym = psr_symbol_id(token_arr, param_name_pos);
+                new_node.value.sym = param_symbol_id;
                 check_Parser param_name_state = psr_store_node(node_arr, new_node);
                 if (param_name_state.error_code != PARSER_OK)
                 {
@@ -331,10 +397,17 @@ check_Parser psr_stmt(
             node_arr,
             token_arr,
             see_token,
-            token_number);
+            token_number,
+            TRUE);
         if (body_state.error_code != PARSER_OK)
         {
             return body_state;
+        }
+
+        scope_state = psr_scope_close();
+        if (scope_state != PARSER_OK)
+        {
+            return psr_result(scope_state, PSR_NO_NODE);
         }
 
         // 함수 노드 생성
@@ -386,7 +459,8 @@ check_Parser psr_stmt(
             node_arr,
             token_arr,
             see_token,
-            token_number);
+            token_number,
+            FALSE);
         if (now_psr_state.error_code != PARSER_OK)
         {
             // 재귀로 받은 노드 확인
@@ -458,7 +532,8 @@ check_Parser psr_stmt(
             node_arr,
             token_arr,
             see_token,
-            token_number);
+            token_number,
+            FALSE);
         if (now_psr_state.error_code != PARSER_OK)
         {
             // 재귀로 받은 노드 확인
@@ -483,6 +558,12 @@ check_Parser psr_stmt(
             return psr_result(NOT_SO_BRACKET, PSR_NO_NODE);
         }
         (*see_token)++;
+
+        uint8_t scope_state = psr_scope_open(SCOPE_BLOCK);
+        if (scope_state != PARSER_OK)
+        {
+            return psr_result(scope_state, PSR_NO_NODE);
+        }
 
         uint16_t init_pos = PSR_NO_NODE;
         uint16_t condition_pos = PSR_NO_NODE;
@@ -580,7 +661,8 @@ check_Parser psr_stmt(
             node_arr,
             token_arr,
             see_token,
-            token_number);
+            token_number,
+            FALSE);
 
         if (now_psr_state.error_code != PARSER_OK)
         {
@@ -607,7 +689,18 @@ check_Parser psr_stmt(
         new_node.mid = condition_pos;
         // 마무리
         new_node.right = now_psr_state.pos;
-        return psr_store_node(node_arr, new_node);
+        now_psr_state = psr_store_node(node_arr, new_node);
+        if (now_psr_state.error_code != PARSER_OK)
+        {
+            return now_psr_state;
+        }
+
+        scope_state = psr_scope_close();
+        if (scope_state != PARSER_OK)
+        {
+            return psr_result(scope_state, PSR_NO_NODE);
+        }
+        return now_psr_state;
     }
 
     // 반환문 (return) 처리
@@ -656,7 +749,8 @@ check_Parser psr_stmt(
             node_arr,
             token_arr,
             see_token,
-            token_number);
+            token_number,
+            FALSE);
     }
 
     // 표현식 처리
@@ -698,9 +792,18 @@ check_Parser parser(
     // 파서 쪽에서 에러나면 확인하는 구조체
     // 노드 위치 초기화
     global_node_pos = 0;
+    psr_scope_close_all();
+
     if (node_arr == 0 || (token_arr == 0 && token_number != 0))
     {
         return psr_result(UNEXPECTED_TOKEN, PSR_NO_NODE);
+    }
+
+    uint8_t scope_state = psr_scope_open(SCOPE_GLOBAL);
+
+    if (scope_state != PARSER_OK)
+    {
+        return psr_result(scope_state, PSR_NO_NODE);
     }
 
     // 내가 보고 있는 토큰
@@ -723,12 +826,14 @@ check_Parser parser(
 
         if (new_psr_state.error_code != PARSER_OK)
         {
+            psr_scope_close_all();
             // 에러 확인
             return new_psr_state;
         }
 
         if (see_token == token_pos_before_stmt)
         {
+            psr_scope_close_all();
             return psr_result(UNEXPECTED_TOKEN, PSR_NO_NODE);
         }
 
@@ -740,6 +845,7 @@ check_Parser parser(
 
         if (list_state.error_code != PARSER_OK)
         {
+            psr_scope_close_all();
             return list_state;
         }
         // 파서 노드가 없다면
@@ -760,5 +866,7 @@ check_Parser parser(
     ast_node root_node = {0};
     psr_init_node(&root_node, BLOCK_NODE);
     root_node.left = head_pos;
-    return psr_store_node(node_arr, root_node);
+    check_Parser root_state = psr_store_node(node_arr, root_node);
+    psr_scope_close_all();
+    return root_state;
 }

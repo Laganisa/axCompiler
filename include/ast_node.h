@@ -55,8 +55,6 @@ enum NODE_TYPE
     RETURN_NODE,
     PARAM_NODE,
     ARG_NODE,
-
-    // ERR_NODE = 255 // 에러 노드(에러가 나올때 이 타입임)
 };
 
 // 노드 생성 에러
@@ -77,10 +75,13 @@ enum PARSER_ERROR_CODE
     NOT_DATA_TYPE, // 자료형이 아님
     NOT_VAR_NAME,  // 변수 이름이 아님
 
-    NOT_OP, // 연산자가 아님
-    UNEXPECTED_TOKEN, // 예상하지 않은 토큰
-    NOT_EXPRESSION, // 표현식이 아님
-    PARSER_NODE_LIMIT, // AST 노드 배열 한도 초과
+    NOT_OP,              // 연산자가 아님
+    UNEXPECTED_TOKEN,    // 예상하지 않은 토큰
+    NOT_EXPRESSION,      // 표현식이 아님
+    PARSER_NODE_LIMIT,   // AST 노드 배열 한도 초과
+    SYMBOL_CREATE_ERROR, // 심볼 생성 오류
+    SYMBOL_SEARCH_ERROR, // 심볼 탐색 오류
+    SYMBOL_SCOPE_ERROR,  // 스코프 생성 및 확인 오류
 };
 
 #endif
