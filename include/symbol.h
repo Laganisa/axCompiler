@@ -25,14 +25,35 @@ typedef struct scope
 
 } scope;
 
+// 노드 생성 에러
+enum SYMBOL_ERROR_CODE
+{
+    // 아직 작성하지 않음
+    SYMBOL_OK = 1, // ACK
+
+    SYMBOL_MAX_SCP = MAX_SCOPE_SIZE, // 최대 스코프 사이즈
+
+    SYMBOL_CRATE_ERR,  // 심블 생성 오류
+    SYMBOL_SEARCH_ERR, // 심블 탐색 오류
+};
+
 // 스코프를 만드는 함수
-scope *scope_crete(ScopeType);
-void scope_delate(scope *scp);
+scope *scope_crete(ScopeType val);
+scope *scope_delate(scope *scp);
 
 /*
-    현재 열린 스코프랑 char *가 들어오면 해시를 통한 탐색
-    해시를 배열에 넣고 그 인덱스를 반환
+    변수명이 선언되었을 때 변수 명을 현재 스코프에 넣는 로직
 */
-uint8_t symbol_table(scope *scp, char *name);
+uint8_t symbol_crate(scope *scp, char *name);
+
+/*
+    변수명이 선언 된 상태이고 표현식에서 쓰일때 스코프에서 찾는 로직
+*/
+uint8_t symbol_search(scope *scp, char *name);
+
+/*
+    변수명을 스코프에서 지우는 로직
+*/
+void symbol_delate(scope *scp, char *name);
 
 #endif

@@ -63,6 +63,7 @@ static inline check_Parser psr_store_node(
     {
         return psr_result(UNEXPECTED_TOKEN, PSR_NO_NODE);
     }
+
     if (global_node_pos >= MAX_PARSER_BUF)
     {
         return psr_result(PARSER_NODE_LIMIT, PSR_NO_NODE);
@@ -81,6 +82,7 @@ static inline uint8_t psr_names_equal(
     const int8_t *name_right)
 {
     uint16_t name_index = 0;
+
     while (name_index < 32 &&
            name_left[name_index] == name_right[name_index])
     {
