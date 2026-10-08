@@ -6,8 +6,10 @@
 #include "hash.h"
 #include "parser.h"
 
+#define MAX_IR_SIZE 1024
+
 // 중간 코드
-typedef struct ic
+typedef struct ir
 {
     uint8_t op;       // 연산 타입
     uint8_t type;     // 데이터 형
@@ -16,7 +18,7 @@ typedef struct ic
     int32_t src1;     // 피연산자 1
     int32_t src2;     // 피연산자 2
 
-} ic;
+} ir;
 
 // 중간코드 에러 확인용도
 // 형식상 추가
@@ -66,10 +68,11 @@ enum IR_ERROR_CODE
 {
     // 아직 작성하지 않음
     IR_OK = 1, // ACK
+    IR_YET,    // 아직 작성되지 않은 기능 사용
 };
 
-check_Ir ir(ast_node *node_arr, uint16_t node_number);
+check_Ir ir_gen(ast_node *node_arr, uint16_t node_number);
 
-void trav(int ir_fd, ast_node *node_arr);
+uint32_t trav(ir *ir_arr, ast_node *node_arr, uint16_t node_index);
 
 #endif

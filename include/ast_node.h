@@ -28,33 +28,35 @@ typedef struct ast_node
 
 enum NODE_TYPE
 {
-    NONE_NODE = 1,
-    NUM_NODE,
-    FLOAT_NODE,
-    STRING_NODE,
-    VAR_NODE,
-    TYPE_NODE,
-    PTR_NODE,
-    UNARY_OP_NODE,
-    BINARY_OP_NODE,
+    NONE_NODE = 1, // 노드가 없음
 
-    STMT_NODE,
-    DECL_NODE,
-    EXPR_NODE,
-    BLOCK_NODE,
+    NUM_NODE,    // 정수 또는 숫자 값
+    FLOAT_NODE,  // 실수 값
+    STRING_NODE, // 문자열
+    VAR_NODE,    // 변수
+    TYPE_NODE,   // 자료형
+    PTR_NODE,    // 포인터
 
-    ASSIGN_NODE,
-    COMPARE_OP_NODE,
-    LOGICAL_OP_NODE,
-    CALL_NODE,
-    INDEX_NODE,
-    MEMBER_NODE,
-    FUNCTION_NODE,
-    IF_NODE,
-    LOOP_NODE,
-    RETURN_NODE,
-    PARAM_NODE,
-    ARG_NODE,
+    UNARY_OP_NODE,  // 단항 연산 (++, --, !, -, * 등)
+    BINARY_OP_NODE, // 이항 연산 (+, -, *, /, ==, < 등)
+
+    STMT_NODE,  // 하나의 문장
+    DECL_NODE,  // 변수 또는 함수 선언
+    EXPR_NODE,  // 값을 계산하는 식
+    BLOCK_NODE, // 여러 문장을 묶은 블록 { ... }
+
+    ASSIGN_NODE,     // 대입 (=)
+    COMPARE_OP_NODE, // 비교 연산 (==, !=, <, > 등)
+    LOGICAL_OP_NODE, // 논리 연산 (&&, ||, !)
+    CALL_NODE,       // 함수 호출
+    INDEX_NODE,      // 배열 인덱스 접근 (arr[i])
+    MEMBER_NODE,     // 구조체 멤버 접근 (a.b, a->b)
+    FUNCTION_NODE,   // 함수
+    IF_NODE,         // if 조건문
+    LOOP_NODE,       // 반복문 (for, while 등)
+    RETURN_NODE,     // return 문
+    PARAM_NODE,      // 함수 매개변수
+    ARG_NODE,        // 함수 호출 인자
 };
 
 // 노드 생성 에러

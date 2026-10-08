@@ -2,242 +2,6 @@
 #include "token.h"
 
 /*
-    ! 나중에 일일이 따라가며 수정하기 !
-*/
-
-// 재귀를 위한 함수
-uint16_t global_node_pos = 0; // 모든 함수에서 사용가능한 어떤 노드 위치에 넣을지
-scope *current_scope = 0;
-
-/*
-    표현식의 어휘 분석
-*/
-check_Parser psr_expr(
-    ast_node *node_arr,
-    token *token_arr,
-    uint16_t *see_token,
-    uint16_t token_number)
-{
-    // 종료 조건
-    if (node_arr == 0 || token_arr == 0 || see_token == 0)
-    {
-        return psr_result(UNEXPECTED_TOKEN, PSR_NO_NODE);
-    }
-
-    return psr_expr_prec(
-        node_arr,
-        token_arr,
-        see_token,
-        token_number,
-        1);
-}
-
-/*
-    선언의 어휘 분석
-*/
-check_Parser psr_decl(
-    ast_node *node_arr,
-    token *token_arr,
-    uint16_t *see_token,
-    uint16_t token_number)
-{
-    // 종료 조건
-    if (node_arr == 0 || token_arr == 0 || see_token == 0)
-    {
-        return psr_result(UNEXPECTED_TOKEN, PSR_NO_NODE);
-    }
-
-    // 자료형 확인
-    uint16_t current_type = psr_token_type_at(token_arr, *see_token, token_number);
-    if (current_type < UINT8_TOKEN || current_type > INT64_TOKEN)
-    {
-        // 에러 처리
-        return psr_result(NOT_DATA_TYPE, PSR_NO_NODE);
-    }
-
-    // 자료형 노드 생성
-    ast_node new_node = {0};
-    psr_init_node(&new_node, TYPE_NODE);
-    new_node.value.type = (uint8_t)current_type;
-    check_Parser type_state = psr_store_node(node_arr, new_node);
-
-    if (type_state.error_code != PARSER_OK)
-    {
-        return type_state;
-    }
-    (*see_token)++;
-
-    // 변수 이름인지 확인
-    if (psr_token_type_at(token_arr, *see_token, token_number) != VAL_TOKEN)
-    {
-        // 변수 이름이 아님
-        return psr_result(NOT_VAR_NAME, PSR_NO_NODE);
-    }
-
-    // 변수명 넣기
-    uint16_t name_pos = *see_token;
-
-    uint16_t symbol_id = 0;
-    uint8_t symbol_state = psr_symbol_create(
-        token_arr,
-        name_pos,
-        &symbol_id);
-
-    if (symbol_state != PARSER_OK)
-    {
-        return psr_result(symbol_state, PSR_NO_NODE);
-    }
-
-    psr_init_node(&new_node, VAR_NODE);
-    new_node.value.sym = symbol_id;
-    check_Parser name_state = psr_store_node(node_arr, new_node);
-
-    if (name_state.error_code != PARSER_OK)
-    {
-        return name_state;
-    }
-    (*see_token)++;
-
-    psr_init_node(&new_node, DECL_NODE);
-    new_node.left = type_state.pos;
-    new_node.mid = name_state.pos;
-
-    // 대입 확인하기
-    if (psr_token_type_at(token_arr, *see_token, token_number) == ASSIGN_TOKEN)
-    {
-        (*see_token)++;
-        check_Parser expression_state = psr_expr(
-            node_arr,
-            token_arr,
-            see_token,
-            token_number);
-        if (expression_state.error_code != PARSER_OK)
-        {
-            // 재귀로 받은 노드 확인
-            return expression_state;
-        }
-        new_node.right = expression_state.pos;
-    }
-
-    // 세미콜론
-    // 새미콜론이 없다면?
-    if (psr_token_type_at(token_arr, *see_token, token_number) != SEMI_TOKEN)
-    {
-        // 구문 에러
-        return psr_result(NOT_SEMI, PSR_NO_NODE);
-    }
-    (*see_token)++;
-
-    return psr_store_node(node_arr, new_node);
-}
-
-/*
-    블럭의 어휘 분석
-*/
-check_Parser psr_block(
-    ast_node *node_arr,
-    token *token_arr,
-    uint16_t *see_token,
-    uint16_t token_number,
-    uint8_t function_body)
-{
-    // 종료 조건
-    if (node_arr == 0 || token_arr == 0 || see_token == 0)
-    {
-        return psr_result(UNEXPECTED_TOKEN, PSR_NO_NODE);
-    }
-
-    if (psr_token_type_at(token_arr, *see_token, token_number) != MO_BRACKET_TOKEN)
-    {
-        return psr_result(NOT_MO_BRACKET, PSR_NO_NODE);
-    }
-    (*see_token)++;
-
-    uint8_t scope_state = PARSER_OK;
-    // 함수 본문은 매개변수와 같은 스코프를 사용
-    if (!function_body)
-    {
-        scope_state = psr_scope_open(SCOPE_BLOCK);
-        if (scope_state != PARSER_OK)
-        {
-            return psr_result(scope_state, PSR_NO_NODE);
-        }
-    }
-
-    uint16_t head_pos = PSR_NO_NODE;
-    uint16_t tail_pos = PSR_NO_NODE;
-
-    // 중괄호가 나올 때 까지 파싱
-    while (psr_token_type_at(token_arr, *see_token, token_number) != MC_BRACKET_TOKEN)
-    {
-        if (*see_token >= token_number ||
-            psr_token_type_at(token_arr, *see_token, token_number) == END_TOKEN)
-        {
-            return psr_result(NOT_MC_BRACKET, PSR_NO_NODE);
-        }
-
-        uint16_t token_pos_before_stmt = *see_token;
-
-        // 문장 파싱
-        check_Parser now_psr_state = psr_stmt(
-            node_arr,
-            token_arr,
-            see_token,
-            token_number);
-        if (now_psr_state.error_code != PARSER_OK)
-        {
-            // 재귀로 받은 노드 확인
-            return now_psr_state;
-        }
-        if (*see_token == token_pos_before_stmt)
-        {
-            return psr_result(UNEXPECTED_TOKEN, PSR_NO_NODE);
-        }
-
-        // 생성된 문장을 목록 노드에 넣기
-        ast_node new_node = {0};
-        psr_init_node(&new_node, STMT_NODE);
-        new_node.left = now_psr_state.pos;
-        check_Parser list_state = psr_store_node(node_arr, new_node);
-        if (list_state.error_code != PARSER_OK)
-        {
-            return list_state;
-        }
-        if (head_pos == PSR_NO_NODE)
-        {
-            head_pos = list_state.pos;
-        }
-        // stmt 노드를 다음 문장으로 연결
-        else
-        {
-            node_arr[tail_pos].right = list_state.pos;
-        }
-        tail_pos = list_state.pos;
-    }
-    (*see_token)++;
-
-    // 블럭 노드 생성
-    ast_node new_node = {0};
-    psr_init_node(&new_node, BLOCK_NODE);
-    new_node.left = head_pos;
-    check_Parser block_state = psr_store_node(node_arr, new_node);
-    if (block_state.error_code != PARSER_OK)
-    {
-        return block_state;
-    }
-
-    if (!function_body)
-    {
-        scope_state = psr_scope_close();
-        if (scope_state != PARSER_OK)
-        {
-            return psr_result(scope_state, PSR_NO_NODE);
-        }
-    }
-    return block_state;
-}
-
-/*
     문장의 어휘 분석
 */
 check_Parser psr_stmt(
@@ -256,6 +20,7 @@ check_Parser psr_stmt(
     uint16_t current_type = psr_token_type_at(token_arr, *see_token, token_number);
 
     // 함수의 어휘 분석
+    // 자료형, 이름, 여는 괄호 순서면 함수 정의로 파싱한다
     if (current_type >= UINT8_TOKEN &&
         current_type <= INT64_TOKEN &&
         token_number - *see_token > 2 &&
@@ -421,6 +186,7 @@ check_Parser psr_stmt(
     }
 
     // 분기문의 어휘 분석
+    // 조건을 확인한 뒤 본문과 선택적인 else 문을 연결한다
     if (current_type == IF_TOKEN)
     {
         // 분기 토큰 소비
@@ -437,7 +203,7 @@ check_Parser psr_stmt(
         // 표현식 파싱
         // mid에 들어갈 변수
         check_Parser now_psr_state = psr_expr(
-            node_arr, token_arr, see_token, token_number);
+            node_arr, token_arr, see_token, token_number, 1);
         if (now_psr_state.error_code != PARSER_OK)
         {
             // 재귀로 받은 노드 확인
@@ -500,6 +266,7 @@ check_Parser psr_stmt(
 
     // 반복문의 어휘 분석
     // 조건 반복문 및 한정 반복문
+    // while 조건과 본문을 반복 노드에 연결한다
     if (current_type == WHILE_TOKEN)
     {
         (*see_token)++;
@@ -514,7 +281,7 @@ check_Parser psr_stmt(
 
         // 조건식 파싱
         check_Parser now_psr_state = psr_expr(
-            node_arr, token_arr, see_token, token_number);
+            node_arr, token_arr, see_token, token_number, 1);
         if (now_psr_state.error_code != PARSER_OK)
         {
             // 재귀로 받은 노드 확인
@@ -550,6 +317,7 @@ check_Parser psr_stmt(
     }
 
     // for 문이라면?
+    // for 초기식, 조건식, 반복식, 본문을 차례로 파싱한다
     if (current_type == FOR_TOKEN)
     {
         (*see_token)++;
@@ -587,7 +355,7 @@ check_Parser psr_stmt(
             {
                 // 대입일 경우
                 now_psr_state = psr_expr(
-                    node_arr, token_arr, see_token, token_number);
+                    node_arr, token_arr, see_token, token_number, 1);
                 if (now_psr_state.error_code == PARSER_OK)
                 {
                     ast_node init_node = {0};
@@ -621,7 +389,7 @@ check_Parser psr_stmt(
         if (psr_token_type_at(token_arr, *see_token, token_number) != SEMI_TOKEN)
         {
             now_psr_state = psr_expr(
-                node_arr, token_arr, see_token, token_number);
+                node_arr, token_arr, see_token, token_number, 1);
             if (now_psr_state.error_code != PARSER_OK)
             {
                 // 재귀로 받은 노드 확인
@@ -639,7 +407,7 @@ check_Parser psr_stmt(
         if (psr_token_type_at(token_arr, *see_token, token_number) != SC_BRACKET_TOKEN)
         {
             now_psr_state = psr_expr(
-                node_arr, token_arr, see_token, token_number);
+                node_arr, token_arr, see_token, token_number, 1);
 
             if (now_psr_state.error_code != PARSER_OK)
             {
@@ -704,6 +472,7 @@ check_Parser psr_stmt(
     }
 
     // 반환문 (return) 처리
+    // 반환식이 있으면 반환 노드에 연결한다
     if (current_type == RETURN_TOKEN)
     {
         (*see_token)++;
@@ -717,7 +486,8 @@ check_Parser psr_stmt(
                 node_arr,
                 token_arr,
                 see_token,
-                token_number);
+                token_number,
+                1);
             if (now_psr_state.error_code != PARSER_OK)
             {
                 return now_psr_state;
@@ -758,7 +528,8 @@ check_Parser psr_stmt(
         node_arr,
         token_arr,
         see_token,
-        token_number);
+        token_number,
+        1);
     if (now_psr_state.error_code != PARSER_OK)
     {
         return now_psr_state;
@@ -774,99 +545,4 @@ check_Parser psr_stmt(
     psr_init_node(&new_node, STMT_NODE);
     new_node.left = now_psr_state.pos;
     return psr_store_node(node_arr, new_node);
-}
-
-/*
-    추상 노드에 넣기 위해 토큰 배열과 그 배열의 개수를 입력 받음
-*/
-check_Parser parser(
-    ast_node *node_arr,
-    token *token_arr,
-    uint16_t token_number)
-{
-    /*
-        파서 로직
-        현재는 재귀 LL(1) 파서임
-    */
-
-    // 파서 쪽에서 에러나면 확인하는 구조체
-    // 노드 위치 초기화
-    global_node_pos = 0;
-    psr_scope_close_all();
-
-    if (node_arr == 0 || (token_arr == 0 && token_number != 0))
-    {
-        return psr_result(UNEXPECTED_TOKEN, PSR_NO_NODE);
-    }
-
-    uint8_t scope_state = psr_scope_open(SCOPE_GLOBAL);
-
-    if (scope_state != PARSER_OK)
-    {
-        return psr_result(scope_state, PSR_NO_NODE);
-    }
-
-    // 내가 보고 있는 토큰
-    uint16_t see_token = 0;
-    uint16_t head_pos = PSR_NO_NODE;
-    uint16_t tail_pos = PSR_NO_NODE;
-
-    // 받은 배열을 전부 순회
-    while (see_token < token_number &&
-           psr_token_type_at(token_arr, see_token, token_number) != END_TOKEN)
-    {
-        uint16_t token_pos_before_stmt = see_token;
-
-        // 문장 파싱
-        check_Parser new_psr_state = psr_stmt(
-            node_arr,
-            token_arr,
-            &see_token,
-            token_number);
-
-        if (new_psr_state.error_code != PARSER_OK)
-        {
-            psr_scope_close_all();
-            // 에러 확인
-            return new_psr_state;
-        }
-
-        if (see_token == token_pos_before_stmt)
-        {
-            psr_scope_close_all();
-            return psr_result(UNEXPECTED_TOKEN, PSR_NO_NODE);
-        }
-
-        // 생성된 문장을 목록 노드에 넣기
-        ast_node stmt_node = {0};
-        psr_init_node(&stmt_node, STMT_NODE);
-        stmt_node.left = new_psr_state.pos;
-        check_Parser list_state = psr_store_node(node_arr, stmt_node);
-
-        if (list_state.error_code != PARSER_OK)
-        {
-            psr_scope_close_all();
-            return list_state;
-        }
-        // 파서 노드가 없다면
-        if (head_pos == PSR_NO_NODE)
-        {
-            head_pos = list_state.pos;
-        }
-        // stmt 노드를 다음 문장으로 연결
-        else
-        {
-            node_arr[tail_pos].right = list_state.pos;
-        }
-
-        tail_pos = list_state.pos;
-    }
-
-    // 최상위 문장 목록을 루트 블럭으로 연결
-    ast_node root_node = {0};
-    psr_init_node(&root_node, BLOCK_NODE);
-    root_node.left = head_pos;
-    check_Parser root_state = psr_store_node(node_arr, root_node);
-    psr_scope_close_all();
-    return root_state;
 }
