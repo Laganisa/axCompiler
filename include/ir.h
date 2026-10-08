@@ -8,17 +8,34 @@
 
 #define MAX_IR_SIZE 1024
 
+enum IR_REG_TYPE
+{
+    IR_NULL_TYPE = 0, // 널 타입
+    IR_REG_TYPE = 1,  // 임시 레지스터 번호
+    IR_IMM_TYPE,      // 즉시값
+    IR_VAR_TYPE,      // 변수의 심볼 번호
+    IR_MEM_TYPE,      // 메모리 주소 또는 메모리 위치
+    IR_LABEL_TYPE,    // 분기 대상 레이블 번호
+};
+
+typedef struct reg_op
+{
+    uint64_t value;
+    uint8_t type;
+
+} reg_op;
+
 // 중간 코드
 typedef struct ir
 {
-    uint8_t op;       // 연산 타입
-    uint8_t type;     // 데이터 형
-    uint16_t padding; // 패딩
-    int32_t dest;     // 목적 레지스터
-    int32_t src1;     // 피연산자 1
-    int32_t src2;     // 피연산자 2
-
+    uint8_t op; // 연산 타입
+    struct reg_op dst;
+    struct reg_op src1;
+    struct reg_op src2;
 } ir;
+
+extern ir global_ir_arr[MAX_IR_SIZE];
+extern uint16_t global_ir_count;
 
 // 중간코드 에러 확인용도
 // 형식상 추가
@@ -26,6 +43,7 @@ typedef struct check_Ir
 {
     uint8_t error_code; // 중간코드 에러코드
     uint16_t ir_is_end; // 함수 종료코드
+    uint16_t ir_count;  // 생성된 중간 코드 개수
 
 } check_Ir;
 
@@ -73,6 +91,8 @@ enum IR_ERROR_CODE
 
 check_Ir ir_gen(ast_node *node_arr, uint16_t node_number);
 
-uint32_t trav(ir *ir_arr, ast_node *node_arr, uint16_t node_index);
+reg_op trav(ir *ir_arr, ast_node *node_arr, uint16_t node_index);
+
+reg_op trav_expr(ir *ir_arr, ast_node *node_arr, uint16_t node_index);
 
 #endif
