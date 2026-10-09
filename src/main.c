@@ -193,6 +193,7 @@ void compiler_main(void)
 
                 src_line_num++;
                 src_line_len = 0;
+
                 axlib_memset(
                     src_line_buf,
                     0,
