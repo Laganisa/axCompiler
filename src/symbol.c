@@ -6,15 +6,22 @@
 // 동적 할당을 이용함
 scope *scope_crete(ScopeType val)
 {
-    if (val > 3)
+    if (val != SCOPE_GLOBAL &&
+        val != SCOPE_FUNCTION &&
+        val != SCOPE_BLOCK)
     {
         return NULL;
     }
 
     scope *new_scp = (scope *)axlib_malloc(sizeof(scope));
+    if (new_scp == NULL)
+    {
+        return NULL;
+    }
 
     new_scp->type = val;
     new_scp->par = NULL;
+    new_scp->num = 0;
 
     for (int i = 0; i < MAX_SCOPE_SIZE; i++)
     {
@@ -50,7 +57,7 @@ uint8_t symbol_crate(scope *scp, char *name)
     // 만약 NULL 이라면
     if (scp == NULL)
     {
-        return NULL;
+        return SYMBOL_CRATE_ERR;
     }
 
     uint64_t hash_val = axlib_fnv1a_hash_64(name);
@@ -85,44 +92,28 @@ uint8_t symbol_search(scope *scp, char *name)
     // 만약 NULL 이라면
     if (scp == NULL)
     {
-        return NULL;
+        return SYMBOL_SEARCH_ERR;
     }
 
     uint64_t hash_val = axlib_fnv1a_hash_64(name);
 
-    // 성공 불리언 변수
-    uint8_t is_succ = FALSE;
-    uint8_t index = 0;
-
     // 탐색 준비
     scope *now_scp = scp;
 
-    // while을 통한 탐색 후
     while (now_scp != NULL)
     {
-        // 현재 있는 숫자 만큼 반복
-        for (int i = 0; i < MAX_SCOPE_SIZE; i++)
+        for (int i = 0; i < now_scp->num; i++)
         {
-            // 만약 있다면?
             if (now_scp->symbol_buf[i] == hash_val)
             {
-                is_succ = TRUE;
-                index = i;
-                break;
+                return (uint8_t)i;
             }
         }
 
-        // 탐색 후 위로 올라가기
         now_scp = now_scp->par;
     }
 
-    // 못 찾으면 에러
-    if (!is_succ)
-    {
-        return SYMBOL_SEARCH_ERR;
-    }
-
-    return index;
+    return SYMBOL_SEARCH_ERR;
 }
 
 /*
