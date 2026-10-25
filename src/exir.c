@@ -1,3 +1,5 @@
+#include "ir.h"
+
 /*
     ir 배열을 파일로 출력하는 로직
 */
@@ -11,7 +13,9 @@ void ir_insert()
     // 파일 디스크럽터 설정하기
     int fd = file_open(new_ir_file_name, "w", 0);
 
+    /*
     while (1)
     {
     }
+    */
 }
